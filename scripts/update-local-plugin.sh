@@ -33,6 +33,38 @@ if [ ! -d "$PLUGIN_DIR" ]; then
   exit 1
 fi
 
+# Obsidian registers every subfolder of .obsidian/plugins as a plugin, keyed by
+# the `id` in its manifest.json. A leftover copy (a backup folder, for example)
+# can therefore shadow the real plugin and silently make updates appear to do
+# nothing. Warn loudly if that is the case.
+duplicate_owners=$(node -e '
+  const fs = require("fs"), path = require("path");
+  const dir = process.argv[1];
+  const id = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8")).id;
+  const pluginsDir = path.dirname(dir);
+  console.log(
+    fs
+      .readdirSync(pluginsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && path.join(pluginsDir, e.name) !== dir)
+      .filter((e) => {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(pluginsDir, e.name, "manifest.json"), "utf8")).id === id;
+        } catch {
+          return false;
+        }
+      })
+      .map((e) => e.name)
+      .join(", ")
+  );
+' "$PLUGIN_DIR" 2>/dev/null)
+
+if [ -n "$duplicate_owners" ]; then
+  echo "!! Another folder in the plugins directory declares the same plugin id:" >&2
+  echo "!!   $duplicate_owners" >&2
+  echo "!! Obsidian may load that copy instead of this one. Move it out of" >&2
+  echo "!!   $(dirname "$PLUGIN_DIR")" >&2
+fi
+
 build_local() {
   echo ">> Building from $REPO_DIR ..."
   (cd "$REPO_DIR" && yarn build >/dev/null)
