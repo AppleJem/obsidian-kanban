@@ -42,7 +42,7 @@ build_local() {
 download_ci_build() {
   echo ">> Looking up latest CI build on main ..."
   cd "$REPO_DIR"
-  local repo_slug run_id tmp
+  local repo_slug run_id
   # Derive the target repo from 'origin' explicitly: gh would otherwise
   # prefer the 'upstream' remote in this checkout.
   repo_slug=$(git remote get-url origin \
@@ -55,20 +55,20 @@ download_ci_build() {
     return 1
   fi
 
-  tmp=$(mktemp -d)
-  trap 'rm -rf "$tmp"' RETURN
+  CLEANUP_DIR=$(mktemp -d)
 
   echo ">> Downloading artifact from run #$run_id ..."
-  if ! gh run download "$run_id" --repo "$repo_slug" --name "$ARTIFACT_NAME" --dir "$tmp"; then
+  if ! gh run download "$run_id" --repo "$repo_slug" --name "$ARTIFACT_NAME" --dir "$CLEANUP_DIR"; then
     echo "!! Could not download the CI artifact (missing 'actions: read' scope?)." >&2
     return 1
   fi
 
-  # gh extracts either into $tmp or into a subdirectory named after the artifact.
-  if [ -f "$tmp/main.js" ]; then
-    src="$tmp"
-  elif [ -f "$tmp/$ARTIFACT_NAME/main.js" ]; then
-    src="$tmp/$ARTIFACT_NAME"
+  # gh extracts either into the target dir or into a subdirectory named
+  # after the artifact.
+  if [ -f "$CLEANUP_DIR/main.js" ]; then
+    src="$CLEANUP_DIR"
+  elif [ -f "$CLEANUP_DIR/$ARTIFACT_NAME/main.js" ]; then
+    src="$CLEANUP_DIR/$ARTIFACT_NAME"
   else
     echo "!! Artifact did not contain main.js" >&2
     return 1
@@ -84,6 +84,14 @@ else
   }
 fi
 
+for f in "${PLUGIN_FILES[@]}"; do
+  if [ ! -f "$src/$f" ]; then
+    echo "error: build is missing $f" >&2
+    [ -n "${CLEANUP_DIR:-}" ] && rm -rf "$CLEANUP_DIR"
+    exit 1
+  fi
+done
+
 old_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$PLUGIN_DIR/manifest.json")
 new_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$src/manifest.json")
 
@@ -95,6 +103,8 @@ done
 # Marker file for the Hot Reload plugin, so Obsidian picks up changes
 # without a restart. Harmless if Hot Reload is not installed.
 touch "$PLUGIN_DIR/.hotreload"
+
+[ -n "${CLEANUP_DIR:-}" ] && rm -rf "$CLEANUP_DIR"
 
 echo ">> Done. Kanban $old_version -> $new_version"
 echo ">> If Hot Reload is enabled, the plugin has already reloaded; otherwise restart Obsidian (Cmd+R)."
