@@ -43,7 +43,10 @@ download_ci_build() {
   echo ">> Looking up latest CI build on main ..."
   cd "$REPO_DIR"
   local repo_slug run_id tmp
-  repo_slug=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+  # Derive the target repo from 'origin' explicitly: gh would otherwise
+  # prefer the 'upstream' remote in this checkout.
+  repo_slug=$(git remote get-url origin \
+    | sed -E 's#^(git@github\.com:|https://github\.com/)##; s#\.git$##')
   run_id=$(gh run list --repo "$repo_slug" --workflow build.yml \
     --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')
 
