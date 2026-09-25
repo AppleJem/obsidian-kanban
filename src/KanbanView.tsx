@@ -15,7 +15,7 @@ import {
 import { KanbanFormat, KanbanSettings, KanbanViewSettings, SettingsModal } from './Settings';
 import { Kanban } from './components/Kanban';
 import { BasicMarkdownRenderer } from './components/MarkdownRenderer/MarkdownRenderer';
-import { c } from './components/helpers';
+import { c, getBoardTags } from './components/helpers';
 import { Board } from './components/types';
 import { getParentWindow } from './dnd/util/getWindow';
 import { gotoNextDailyNote, gotoPrevDailyNote, hasFrontmatterKeyRaw } from './helpers';
@@ -39,6 +39,7 @@ export class KanbanView extends TextFileView implements HoverParent {
 
   activeEditor: any;
   viewSettings: KanbanViewSettings = {};
+  tagFilter: string | null = null;
 
   get isPrimary(): boolean {
     return this.plugin.getStateManager(this.file)?.getAView() === this;
@@ -130,6 +131,18 @@ export class KanbanView extends TextFileView implements HoverParent {
   getBoard(): Board {
     const stateManager = this.plugin.stateManagers.get(this.file);
     return stateManager.state;
+  }
+
+  setTagFilter(tag: string | null) {
+    this.tagFilter = tag;
+
+    const btn = this.actionButtons['show-tag-filter'];
+    if (btn) {
+      btn.setAttribute('aria-label', tag ? `${t('Filter by tag')}: ${tag}` : t('Filter by tag'));
+      btn.classList.toggle('is-active', !!tag);
+    }
+
+    this.emitter.emit('tagFilterChange', tag);
   }
 
   getViewType() {
@@ -234,6 +247,8 @@ export class KanbanView extends TextFileView implements HoverParent {
       this.emitter.emit('queueEmpty');
       Object.values(this.actionButtons).forEach((b) => b.remove());
       this.actionButtons = {};
+      this.tagFilter = null;
+      this.emitter.emit('tagFilterChange', null);
     }
 
     this.plugin.addView(this, data, !clear && this.isPrimary);
@@ -425,6 +440,48 @@ export class KanbanView extends TextFileView implements HoverParent {
     } else if (!stateManager.getSetting('show-search') && this.actionButtons['show-search']) {
       this.actionButtons['show-search'].remove();
       delete this.actionButtons['show-search'];
+    }
+
+    if (!this.actionButtons['show-tag-filter']) {
+      const btn = this.addAction(
+        'lucide-tag',
+        this.tagFilter ? `${t('Filter by tag')}: ${this.tagFilter}` : t('Filter by tag'),
+        (evt) => {
+          const tags = getBoardTags(this.getBoard());
+
+          // Keep the active filter selectable even if no card uses it anymore,
+          // so the board can never be left stuck with everything hidden.
+          if (this.tagFilter && !tags.includes(this.tagFilter)) {
+            tags.push(this.tagFilter);
+            tags.sort((a, b) => a.localeCompare(b));
+          }
+
+          const menu = new Menu();
+
+          menu.addItem((item) =>
+            item
+              .setTitle(t('All'))
+              .setChecked(this.tagFilter === null)
+              .onClick(() => this.setTagFilter(null))
+          );
+
+          tags.forEach((tag) =>
+            menu.addItem((item) =>
+              item
+                .setTitle(tag)
+                .setChecked(this.tagFilter === tag)
+                .onClick(() => this.setTagFilter(tag))
+            )
+          );
+
+          menu.showAtMouseEvent(evt);
+        }
+      );
+
+      btn.addClass(c('tag-filter'));
+      btn.classList.toggle('is-active', !!this.tagFilter);
+
+      this.actionButtons['show-tag-filter'] = btn;
     }
 
     if (

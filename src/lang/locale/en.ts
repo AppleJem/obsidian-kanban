@@ -42,6 +42,10 @@ const en = {
   default: 'default',
   'Search...': 'Search...',
 
+  // KanbanView.tsx
+  'Filter by tag': 'Filter by tag',
+  All: 'All',
+
   // Settings.ts
   'New line trigger': 'New line trigger',
   'Select whether Enter or Shift+Enter creates a new line. The opposite of what you choose will create and complete editing of cards and lists.':

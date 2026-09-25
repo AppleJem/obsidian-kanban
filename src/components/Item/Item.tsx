@@ -14,7 +14,7 @@ import { DndManagerContext } from 'src/dnd/components/context';
 import { useDragHandle } from 'src/dnd/managers/DragManager';
 import { frontmatterKey } from 'src/parsers/common';
 
-import { KanbanContext, SearchContext } from '../context';
+import { KanbanContext, SearchContext, TagFilterContext } from '../context';
 import { c } from '../helpers';
 import { EditState, EditingState, Item, isEditing } from '../types';
 import { ItemCheckbox } from './ItemCheckbox';
@@ -189,13 +189,17 @@ interface ItemsProps {
 
 export const Items = memo(function Items({ isStatic, items, shouldMarkItemsComplete }: ItemsProps) {
   const search = useContext(SearchContext);
+  const tagFilter = useContext(TagFilterContext);
   const { view } = useContext(KanbanContext);
   const boardView = view.useViewState(frontmatterKey);
 
   return (
     <>
       {items.map((item, i) => {
-        return search?.query && !search.items.has(item) ? null : (
+        const isHidden =
+          (search?.query && !search.items.has(item)) ||
+          (tagFilter?.tag && !tagFilter.items.has(item));
+        return isHidden ? null : (
           <DraggableItem
             key={boardView + item.id}
             item={item}

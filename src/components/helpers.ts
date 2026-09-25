@@ -12,7 +12,7 @@ import {
   toggleTask,
 } from 'src/parsers/helpers/inlineMetadata';
 
-import { SearchContextProps } from './context';
+import { SearchContextProps, TagFilterContextProps } from './context';
 import { Board, DataKey, DateColor, Item, Lane, PageData, TagColor } from './types';
 
 export const baseClassName = 'kanban-plugin';
@@ -400,4 +400,34 @@ export function useSearchValue(
       },
     };
   }, [board, query, setSearchQuery, setDebouncedSearchQuery]);
+}
+
+export function getBoardTags(board: Board): string[] {
+  const tags = new Set<string>();
+
+  board?.children.forEach((lane) => {
+    lane.children.forEach((item) => {
+      item.data.metadata.tags?.forEach((tag) => tags.add(tag));
+    });
+  });
+
+  return Array.from(tags).sort((a, b) => a.localeCompare(b));
+}
+
+export function useTagFilterValue(board: Board, tag: string | null): TagFilterContextProps {
+  return useMemo<TagFilterContextProps>(() => {
+    const items = new Set<Item>();
+
+    if (tag) {
+      board?.children.forEach((lane) => {
+        lane.children.forEach((item) => {
+          if (item.data.metadata.tags?.includes(tag)) {
+            items.add(item);
+          }
+        });
+      });
+    }
+
+    return { tag, items };
+  }, [board, tag]);
 }

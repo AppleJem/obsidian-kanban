@@ -18,7 +18,7 @@ import { getDataviewPlugin, lableToName, taskFields } from 'src/parsers/helpers/
 
 import { Tags } from '../Item/ItemContent';
 import { MetadataValue, anyToString } from '../Item/MetadataTable';
-import { SearchContext } from '../context';
+import { SearchContext, TagFilterContext } from '../context';
 import { Board, Lane } from '../types';
 import { DateCell, ItemCell, LaneCell } from './Cells';
 import { TableData, TableItem } from './types';
@@ -51,6 +51,7 @@ export const fuzzySort: SortingFn<any> = (rowA, rowB, columnId) => {
 };
 
 export function useTableData(board: Board, stateManager: StateManager): TableData {
+  const tagFilter = useContext(TagFilterContext);
   return useMemo<TableData>(() => {
     const items: TableItem[] = [];
     const metadata: Set<string> = new Set();
@@ -65,6 +66,7 @@ export function useTableData(board: Board, stateManager: StateManager): TableDat
       const lane = lanes[i];
       for (let j = 0, len = lane.children.length; j < len; j++) {
         const item = lane.children[j];
+        if (tagFilter?.tag && !tagFilter.items.has(item)) continue;
         const itemMetadata = item.data.metadata;
         const itemfileMetadata = itemMetadata.fileMetadata || {};
         const fileMetaOrder = itemMetadata.fileMetadataOrder || [];
@@ -110,7 +112,7 @@ export function useTableData(board: Board, stateManager: StateManager): TableDat
       fileMetadata: Array.from(fileMetadata),
       inlineMetadata: Array.from(inlineMetadata),
     };
-  }, [board]);
+  }, [board, tagFilter]);
 }
 
 export const baseColumns = (sizing: Record<string, number>): ColumnDef<TableItem, any>[] => [

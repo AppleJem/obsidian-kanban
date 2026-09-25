@@ -18,8 +18,8 @@ import { Icon } from './Icon/Icon';
 import { Lanes } from './Lane/Lane';
 import { LaneForm } from './Lane/LaneForm';
 import { TableView } from './Table/Table';
-import { KanbanContext, SearchContext } from './context';
-import { baseClassName, c, useSearchValue } from './helpers';
+import { KanbanContext, SearchContext, TagFilterContext } from './context';
+import { baseClassName, c, useSearchValue, useTagFilterValue } from './helpers';
 import { DataTypes } from './types';
 
 const boardScrollTiggers = [DataTypes.Item, DataTypes.Lane];
@@ -55,6 +55,7 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [tagFilter, setTagFilter] = useState<string | null>(view.tagFilter);
 
   const [isLaneFormVisible, setIsLaneFormVisible] = useState<boolean>(
     boardData?.children.length === 0
@@ -112,12 +113,18 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
       setIsLaneFormVisible(true);
     };
 
+    const onTagFilterChange = (tag: string | null) => {
+      setTagFilter(tag);
+    };
+
     view.emitter.on('hotkey', onSearchHotkey);
     view.emitter.on('showLaneForm', showLaneForm);
+    view.emitter.on('tagFilterChange', onTagFilterChange);
 
     return () => {
       view.emitter.off('hotkey', onSearchHotkey);
       view.emitter.off('showLaneForm', showLaneForm);
+      view.emitter.off('tagFilterChange', onTagFilterChange);
     };
   }, [view]);
 
@@ -209,86 +216,89 @@ export const Kanban = ({ view, stateManager }: KanbanProps) => {
     setDebouncedSearchQuery,
     setIsSearching
   );
+  const tagFilterValue = useTagFilterValue(boardData, tagFilter);
 
   return (
     <DndScope id={view.id}>
       <KanbanContext.Provider value={kanbanContext}>
         <SearchContext.Provider value={searchValue}>
-          <div
-            ref={rootRef}
-            className={classcat([
-              baseClassName,
-              {
-                'something-is-dragging': isAnythingDragging,
-              },
-              ...getCSSClass(boardData.data.frontmatter),
-            ])}
-            {...html5DragHandlers}
-          >
-            {(isLaneFormVisible || boardData.children.length === 0) && (
-              <LaneForm onNewLane={onNewLane} closeLaneForm={closeLaneForm} />
-            )}
-            {isSearching && (
-              <div className={c('search-wrapper')}>
-                <input
-                  ref={searchRef}
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery((e.target as HTMLInputElement).value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
+          <TagFilterContext.Provider value={tagFilterValue}>
+            <div
+              ref={rootRef}
+              className={classcat([
+                baseClassName,
+                {
+                  'something-is-dragging': isAnythingDragging,
+                },
+                ...getCSSClass(boardData.data.frontmatter),
+              ])}
+              {...html5DragHandlers}
+            >
+              {(isLaneFormVisible || boardData.children.length === 0) && (
+                <LaneForm onNewLane={onNewLane} closeLaneForm={closeLaneForm} />
+              )}
+              {isSearching && (
+                <div className={c('search-wrapper')}>
+                  <input
+                    ref={searchRef}
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery((e.target as HTMLInputElement).value);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setSearchQuery('');
+                        setDebouncedSearchQuery('');
+                        (e.target as HTMLInputElement).blur();
+                        setIsSearching(false);
+                      }
+                    }}
+                    type="text"
+                    className={c('filter-input')}
+                    placeholder={t('Search...')}
+                  />
+                  <a
+                    className={`${c('search-cancel-button')} clickable-icon`}
+                    onClick={() => {
                       setSearchQuery('');
                       setDebouncedSearchQuery('');
-                      (e.target as HTMLInputElement).blur();
                       setIsSearching(false);
-                    }
-                  }}
-                  type="text"
-                  className={c('filter-input')}
-                  placeholder={t('Search...')}
-                />
-                <a
-                  className={`${c('search-cancel-button')} clickable-icon`}
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDebouncedSearchQuery('');
-                    setIsSearching(false);
-                  }}
-                  aria-label={t('Cancel')}
-                >
-                  <Icon name="lucide-x" />
-                </a>
-              </div>
-            )}
-            {boardView === 'table' ? (
-              <TableView boardData={boardData} stateManager={stateManager} />
-            ) : (
-              <ScrollContainer
-                id={view.id}
-                className={classcat([
-                  c('board'),
-                  {
-                    [c('horizontal')]: boardView !== 'list',
-                    [c('vertical')]: boardView === 'list',
-                    'is-adding-lane': isLaneFormVisible,
-                  },
-                ])}
-                triggerTypes={boardScrollTiggers}
-              >
-                <div>
-                  <Sortable axis={axis}>
-                    <Lanes lanes={boardData.children} collapseDir={axis} />
-                    <SortPlaceholder
-                      accepts={boardAccepts}
-                      className={c('lane-placeholder')}
-                      index={boardData.children.length}
-                    />
-                  </Sortable>
+                    }}
+                    aria-label={t('Cancel')}
+                  >
+                    <Icon name="lucide-x" />
+                  </a>
                 </div>
-              </ScrollContainer>
-            )}
-          </div>
+              )}
+              {boardView === 'table' ? (
+                <TableView boardData={boardData} stateManager={stateManager} />
+              ) : (
+                <ScrollContainer
+                  id={view.id}
+                  className={classcat([
+                    c('board'),
+                    {
+                      [c('horizontal')]: boardView !== 'list',
+                      [c('vertical')]: boardView === 'list',
+                      'is-adding-lane': isLaneFormVisible,
+                    },
+                  ])}
+                  triggerTypes={boardScrollTiggers}
+                >
+                  <div>
+                    <Sortable axis={axis}>
+                      <Lanes lanes={boardData.children} collapseDir={axis} />
+                      <SortPlaceholder
+                        accepts={boardAccepts}
+                        className={c('lane-placeholder')}
+                        index={boardData.children.length}
+                      />
+                    </Sortable>
+                  </div>
+                </ScrollContainer>
+              )}
+            </div>
+          </TagFilterContext.Provider>
         </SearchContext.Provider>
       </KanbanContext.Provider>
     </DndScope>
