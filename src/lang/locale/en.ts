@@ -212,11 +212,6 @@ const en = {
   today: 'today',
   yesterday: 'yesterday',
   tomorrow: 'tomorrow',
-  'Due today': 'Due today',
-  'Due tomorrow': 'Due tomorrow',
-  'Due in {count} days': 'Due in {count} days',
-  'Overdue by {count} day': 'Overdue by {count} day',
-  'Overdue by {count} days': 'Overdue by {count} days',
   'Change date': 'Change date',
   'Change time': 'Change time',
 

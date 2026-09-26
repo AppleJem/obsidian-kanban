@@ -4,7 +4,7 @@ import { JSX, useMemo } from 'preact/compat';
 import { StateManager } from 'src/StateManager';
 import { t } from 'src/lang/helpers';
 
-import { c, getDueDateInfo } from '../helpers';
+import { c, getDueTone } from '../helpers';
 import { DateColor, Item } from '../types';
 
 export function getRelativeDate(date: moment.Moment, time: moment.Moment) {
@@ -74,9 +74,9 @@ export function DateAndTime({
     if (!targetDate) return null;
     return getDateColor(targetDate);
   }, [targetDate, getDateColor]);
-  const dueInfo = useMemo(() => {
+  const dueTone = useMemo(() => {
     if (!targetDate) return null;
-    return getDueDateInfo(targetDate);
+    return getDueTone(targetDate);
   }, [targetDate]);
 
   if (!moveDates || !targetDate) return null;
@@ -89,9 +89,6 @@ export function DateAndTime({
   const hasTime = !!item.data.metadata.time;
   const dateDisplayStr = targetDate.format(dateDisplayFormat);
   const timeDisplayStr = !hasTime ? null : targetDate.format(timeFormat);
-  // Every date is treated as a due date, so the pill shows the relative due
-  // label. The formatted date is kept as a tooltip for reference.
-  const displayStr = dueInfo?.label ?? dateDisplayStr;
 
   const datePath = dateStr ? getLinkpath(dateStr) : null;
   const isResolved = dateStr
@@ -105,17 +102,14 @@ export function DateAndTime({
         className={`internal-link ${isResolved ? '' : 'is-unresolved'}`}
         target="blank"
         rel="noopener"
-        title={dateDisplayStr}
       >
-        {displayStr}
+        {dateDisplayStr}
       </a>
     ) : (
-      displayStr
+      dateDisplayStr
     );
 
-  const dateProps: HTMLAttributes<HTMLSpanElement> = {
-    title: dateDisplayStr,
-  };
+  const dateProps: HTMLAttributes<HTMLSpanElement> = {};
 
   if (!shouldLinkDate) {
     dateProps['aria-label'] = t('Change date');
@@ -135,7 +129,7 @@ export function DateAndTime({
         c('date'),
         {
           'has-background': !!dateColor?.backgroundColor,
-          [c(`due-${dueInfo?.tone}`)]: !dateColor && !!dueInfo?.tone,
+          [c(`due-${dueTone}`)]: !dateColor && !!dueTone,
         },
       ])}
     >

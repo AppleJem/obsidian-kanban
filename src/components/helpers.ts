@@ -2,7 +2,6 @@ import update from 'immutability-helper';
 import { App, MarkdownView, TFile, moment } from 'obsidian';
 import Preact, { Dispatch, RefObject, useEffect } from 'preact/compat';
 import { StateUpdater, useMemo } from 'preact/hooks';
-import { t } from 'src/lang/helpers';
 import { StateManager } from 'src/StateManager';
 import { Path } from 'src/dnd/types';
 import { getEntityFromPath } from 'src/dnd/util/data';
@@ -322,39 +321,18 @@ export function useGetDateColorFn(
 
 export type DueTone = 'overdue' | 'today' | 'soon' | 'upcoming';
 
-export interface DueDateInfo {
-  label: string;
-  tone: DueTone | null;
-}
-
 /**
- * Dates on cards are treated as due dates. This returns the relative "due"
- * label plus a tone used to subtly color the date pill based on urgency.
+ * Dates on cards are treated as due dates. This returns a tone used to
+ * subtly color the date pill based on how close the date is.
  */
-export function getDueDateInfo(date: moment.Moment): DueDateInfo {
+export function getDueTone(date: moment.Moment): DueTone | null {
   const days = date.clone().startOf('day').diff(moment().startOf('day'), 'days');
-  const abs = Math.abs(days);
 
-  if (days < 0) {
-    const label = t(
-      abs === 1 ? 'Overdue by {count} day' : 'Overdue by {count} days'
-    ).replace('{count}', String(abs));
-
-    return { label, tone: 'overdue' };
-  }
-
-  if (days === 0) {
-    return { label: t('Due today'), tone: 'today' };
-  }
-
-  if (days === 1) {
-    return { label: t('Due tomorrow'), tone: 'soon' };
-  }
-
-  return {
-    label: t('Due in {count} days').replace('{count}', String(days)),
-    tone: days <= 3 ? 'soon' : days <= 7 ? 'upcoming' : null,
-  };
+  if (days < 0) return 'overdue';
+  if (days === 0) return 'today';
+  if (days <= 3) return 'soon';
+  if (days <= 7) return 'upcoming';
+  return null;
 }
 
 export function parseMetadataWithOptions(data: InlineField, metadataKeys: DataKey[]): PageData {
