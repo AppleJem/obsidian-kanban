@@ -1,6 +1,6 @@
 import { moment } from 'obsidian';
 import { StateManager } from 'src/StateManager';
-import { c, DueTone, escapeRegExpStr, getDateColorFn, getDueTone } from 'src/components/helpers';
+import { c, DueTone, escapeRegExpStr, getDateColorFn, getDueDateInfo } from 'src/components/helpers';
 import { Board, DataTypes, DateColor, Item, Lane } from 'src/components/types';
 import { Path } from 'src/dnd/types';
 import { getEntityFromPath } from 'src/dnd/util/data';
@@ -47,11 +47,12 @@ export function preprocessTitle(stateManager: StateManager, title: string) {
       date = parsed;
       const linkPath = app.metadataCache.getFirstLinkpathDest(content, stateManager.file.path);
       if (!dateColor) dateColor = getDateColor(parsed);
+      const dueInfo = getDueDateInfo(parsed);
       const { wrapperClass, wrapperStyle } = getWrapperStyles(
         c('preview-date-wrapper'),
-        getDueTone(parsed)
+        dueInfo.tone
       );
-      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')} ${c('preview-date-link')}"${wrapperStyle}><a class="${c('preview-date')} internal-link" data-href="${linkPath?.path ?? content}" href="${linkPath?.path ?? content}" target="_blank" rel="noopener">${parsed.format(dateDisplayFormat)}</a></span>`;
+      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')} ${c('preview-date-link')}"${wrapperStyle}><a class="${c('preview-date')} internal-link" data-href="${linkPath?.path ?? content}" href="${linkPath?.path ?? content}" target="_blank" rel="noopener" title="${parsed.format(dateDisplayFormat)}">${dueInfo.label}</a></span>`;
     }
   );
   title = title.replace(
@@ -62,11 +63,12 @@ export function preprocessTitle(stateManager: StateManager, title: string) {
       date = parsed;
       const linkPath = app.metadataCache.getFirstLinkpathDest(content, stateManager.file.path);
       if (!dateColor) dateColor = getDateColor(parsed);
+      const dueInfo = getDueDateInfo(parsed);
       const { wrapperClass, wrapperStyle } = getWrapperStyles(
         c('preview-date-wrapper'),
-        getDueTone(parsed)
+        dueInfo.tone
       );
-      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')} ${c('preview-date-link')}"${wrapperStyle}><a class="${c('preview-date')} internal-link" data-href="${linkPath?.path ?? content}" href="${linkPath?.path ?? content}" target="_blank" rel="noopener">${parsed.format(dateDisplayFormat)}</a></span>`;
+      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')} ${c('preview-date-link')}"${wrapperStyle}><a class="${c('preview-date')} internal-link" data-href="${linkPath?.path ?? content}" href="${linkPath?.path ?? content}" target="_blank" rel="noopener" title="${parsed.format(dateDisplayFormat)}">${dueInfo.label}</a></span>`;
     }
   );
   title = title.replace(
@@ -76,11 +78,12 @@ export function preprocessTitle(stateManager: StateManager, title: string) {
       if (!parsed.isValid()) return match;
       date = parsed;
       if (!dateColor) dateColor = getDateColor(parsed);
+      const dueInfo = getDueDateInfo(parsed);
       const { wrapperClass, wrapperStyle } = getWrapperStyles(
         c('preview-date-wrapper'),
-        getDueTone(parsed)
+        dueInfo.tone
       );
-      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')}"${wrapperStyle}><span class="${c('preview-date')} ${c('item-metadata-date')}">${parsed.format(dateDisplayFormat)}</span></span>`;
+      return `${space}<span data-date="${date.toISOString()}" class="${wrapperClass} ${c('date')}"${wrapperStyle}><span class="${c('preview-date')} ${c('item-metadata-date')}" title="${parsed.format(dateDisplayFormat)}">${dueInfo.label}</span></span>`;
     }
   );
 
