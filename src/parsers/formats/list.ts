@@ -199,7 +199,7 @@ export function listItemToItemData(stateManager: StateManager, md: string, item:
   if (inlineFields?.length) {
     const inlineMetadata = (itemData.metadata.inlineMetadata = inlineFields.reduce((acc, curr) => {
       if (!taskFields.has(curr.key)) acc.push(curr);
-      else if (firstLineEnd <= 0 || curr.end < firstLineEnd) acc.push(curr);
+      else if (firstLineEnd <= 0 || curr.end <= firstLineEnd) acc.push(curr);
 
       return acc;
     }, []));
