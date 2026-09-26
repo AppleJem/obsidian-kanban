@@ -1766,6 +1766,37 @@ body:not(.native-scrollbars) .kanban-plugin__scroll-container::-webkit-scrollbar
   }
 }
 
+// Subtle urgency coloring for due dates on cards
+.kanban-plugin__date {
+  &.kanban-plugin__due-overdue {
+    --date-background-color: rgba(var(--color-red-rgb, 224, 92, 92), 0.14);
+    &:hover {
+      --date-background-color: rgba(var(--color-red-rgb, 224, 92, 92), 0.22);
+    }
+  }
+
+  &.kanban-plugin__due-today {
+    --date-background-color: rgba(var(--color-orange-rgb, 224, 148, 72), 0.16);
+    &:hover {
+      --date-background-color: rgba(var(--color-orange-rgb, 224, 148, 72), 0.24);
+    }
+  }
+
+  &.kanban-plugin__due-soon {
+    --date-background-color: rgba(var(--color-yellow-rgb, 214, 184, 68), 0.18);
+    &:hover {
+      --date-background-color: rgba(var(--color-yellow-rgb, 214, 184, 68), 0.26);
+    }
+  }
+
+  &.kanban-plugin__due-upcoming {
+    --date-background-color: rgba(var(--color-green-rgb, 96, 170, 110), 0.12);
+    &:hover {
+      --date-background-color: rgba(var(--color-green-rgb, 96, 170, 110), 0.2);
+    }
+  }
+}
+
 .completion .kanban-plugin__date.has-background {
   color: inherit;
   background-color: transparent;
