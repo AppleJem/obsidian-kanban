@@ -21,9 +21,6 @@ export function ItemForm({ addItems, editState, setEditState, hideButton }: Item
   const editorRef = useRef<EditorView>();
 
   const clear = () => setEditState(EditingState.cancel);
-  const clickOutsideRef = useOnclickOutside(clear, {
-    ignoreClass: [c('ignore-click-outside'), 'mobile-toolbar', 'suggestion-container'],
-  });
 
   const createItem = (title: string) => {
     addItems([stateManager.getNewItem(title, ' ')]);
@@ -38,6 +35,19 @@ export function ItemForm({ addItems, editState, setEditState, hideButton }: Item
       });
     }
   };
+
+  const confirmAndClose = () => {
+    const cm = editorRef.current;
+    const title = cm ? cm.state.doc.toString() : '';
+    if (title.trim().length) {
+      createItem(title);
+    }
+    clear();
+  };
+
+  const clickOutsideRef = useOnclickOutside(confirmAndClose, {
+    ignoreClass: [c('ignore-click-outside'), 'mobile-toolbar', 'suggestion-container'],
+  });
 
   if (isEditing(editState)) {
     return (
